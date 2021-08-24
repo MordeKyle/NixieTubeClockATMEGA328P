@@ -1,0 +1,22 @@
+Parts list:<br/>
+**ATMEGA328P-PU** - https://www.digikey.com/en/products/detail/microchip-technology/ATMEGA328P-PU/1914589<br/>
+**2032 Battery Holder** - https://www.digikey.com/en/products/detail/keystone-electronics/101/2745548<br/>
+**2032 Battery** - https://www.digikey.com/en/products/detail/ecs-inc/ECS-.327-12.5-13X/827615<br/>
+**32.7680KHZ Cyrstal** - https://www.digikey.com/en/products/detail/ecs-inc/ECS-.327-12.5-13X/827615<br/>
+DS1307 RTC - https://www.ebay.com/itm/224302451696<br/>
+DIP IC Socket Adapter Kit - https://www.ebay.com/itm/224043518271<br/>
+LM7805 Voltage Regulator - https://www.ebay.com/itm/381374640824<br/>
+4x 100nF and 2x 10uF Capacitors -  https://www.ebay.com/itm/292963354070<br/>
+1kΩ, 2.2kΩ, and 10kΩ resistors - https://www.ebay.com/itm/324083572997<br/>
+**DC Barrel Power Jack** - https://www.sparkfun.com/products/119<br/>
+IN-14 Nixie Tubes - https://www.ebay.com/itm/303748809541<br/>
+K155ID1 Nixie Tube Drivers - https://www.ebay.com/itm/183563404353<br/>
+**16MHz Crystal and 20pF Capacitors** - https://www.adafruit.com/product/2215<br/>
+12v Wall Adapter - https://www.amazon.com/TMEZON-Power-Adapter-Supply-2-1mm/dp/B00Q2E5IXW<br/>
+High Voltage Power Supply - https://www.ebay.com/itm/152237036068<br/>
+Barrel Jack Screw Terminal - https://www.ebay.com/itm/184461687427<br/>
+5mm Pitch Screw Terminals - https://www.ebay.com/itm/382823408620<br/>
+<br/>
+You will also need a working Arduino and maybe some sort of FTDI to send code to the ATMEGA328 - https://www.sparkfun.com/products/9716<br/>
+<br/>
+**BOLD** items indicate items I purchased for this project and are know to work. The rest of the items I either already had or purchased from different vendors.
