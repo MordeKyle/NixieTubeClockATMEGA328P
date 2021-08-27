@@ -1,3 +1,6 @@
+#include <RTC.h>
+#include <Wire.h>
+
 //declare constants for pins going to SN74HC595N
 const int latchPin = 9;
 const int clockPin = 10;
@@ -8,7 +11,7 @@ const int dataPin = 8;
 const byte minutesTens[6] = {0b00000000,0b10000000,0b01000000,0b11000000,0b00100000,0b10100000};
 const byte minutesOnes[10] = {0b00000000,0b00001000,0b00000100,0b00001100,0b00000010,0b00001010,0b00000110,0b00001110,0b00000001,0b00001001};
 const byte hoursTens[3] = {0b00000000,0b10000000,0b01000000};
-const byte hoursMinutes[10] = {0b00000000,0b00001000,0b00000100,0b00001100,0b00000010,0b00001010,0b00000110,0b00001110,0b00000001,0b00001001};
+const byte hoursOnes[10] = {0b00000000,0b00001000,0b00000100,0b00001100,0b00000010,0b00001010,0b00000110,0b00001110,0b00000001,0b00001001};
 
 //declare variables to send into shift register function
 byte hours;
@@ -31,6 +34,36 @@ int hOnes;
 int mTens;
 int mOnes;
 
+//declare variable to hold single digit of time in string form for conversion
+String hTensHolder;
+String hOnesHolder;
+String mTensHolder;
+String mOnesHolder;
+
+//function to update SN74HC595N
+void updateRegister(byte mins, byte hrs)
+{
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, LSBFIRST, hrs);
+  shiftOut(dataPin, clockPin, LSBFIRST, mins);
+  digitalWrite(latchPin, HIGH);
+}
+
+//function to decide if a leading zero needs to be added or not
+String isLeadingZero(int input)
+{
+  String holder;
+  if (input<10)
+  {
+    holder = String(leadingZero + input);
+  }
+  else
+  {
+    holder = String(input);
+  }
+  return holder;
+}
+
 void setup()
 {
   pinMode(latchPin, OUTPUT);
@@ -47,38 +80,19 @@ void loop()
   zeroedMinutes = isLeadingZero(rtcMinutes);
   zeroedHours = isLeadingZero(rtcHours);
 
-  hTens = zeroedHours[0].toInt();
-  hOnes = zeroedHours[1].toInt();
-  mTens = zeroedHours[0].toInt();
-  mOnes = zeroedHours[1].toInt();
+  hTensHolder = zeroedHours[0];
+  hOnesHolder = zeroedHours[1];
+  mTensHolder = zeroedHours[0];
+  mOnesHolder = zeroedHours[1];
+
+  hTens = hTensHolder.toInt();
+  hOnes = hOnesHolder.toInt();
+  mTens = mTensHolder.toInt();
+  mOnes = mOnesHolder.toInt();
 
   minutes = minutesTens[mTens] + minutesOnes[mOnes];
   hours = hoursTens[hTens] + hoursOnes[hOnes];
 
   updateRegister(minutes, hours);
   
-}
-
-//function to update SN74HC595N
-void updateRegister(byte mins, byte hrs)
-{
-  digitalWrite(latchPin, LOW);
-  shiftOut(dataPin, clockPin, LSBFIRST, hrs);
-  shiftOut(dataPin, clockPin, LSBFIRST, mins);
-  digitalWrite(latchPin, HIGH);
-}
-
-//function to decide if a leading zero needs to be added or not
-void needsLeadingZero(int input)
-{
-  String holder;
-  if (input<10)
-  {
-    holder = String(leadingZero + input);
-  }
-  else
-  {
-    holder = String(input);
-  }
-  return holder;
 }
