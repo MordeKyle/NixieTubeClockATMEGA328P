@@ -1,6 +1,8 @@
 #include <RTC.h>
 #include <Wire.h>
 
+static DS1307 RTC;
+
 //declare constants for pins going to SN74HC595N
 const int latchPin = 9;
 const int clockPin = 10;
@@ -66,6 +68,19 @@ String isLeadingZero(int input)
 
 void setup()
 {
+  Serial.begin(9600);
+  RTC.begin();
+  Serial.println();
+  Serial.println("DS 1307 RTC");
+  Serial.print("Is DS1307 Running: ");
+  if (RTC.isRunning())
+  {
+    Serial.println("Yes");
+  }
+  else
+  {
+    Serial.println("No");
+  }
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
@@ -73,26 +88,31 @@ void setup()
 
 void loop()
 {
-  //update time from rtc
-  //rtcMinutes = rtc.minutes;
-  //rtcHours = rtc.hours;
-  
+  //update time from RTC
+  rtcMinutes = RTC.getMinutes();
+  rctHours = RTC.getHours();
+
+  //apply leading zero if necessary
   zeroedMinutes = isLeadingZero(rtcMinutes);
   zeroedHours = isLeadingZero(rtcHours);
 
+  //separate the ones and tens
   hTensHolder = zeroedHours[0];
   hOnesHolder = zeroedHours[1];
   mTensHolder = zeroedHours[0];
   mOnesHolder = zeroedHours[1];
 
+  //convert to int
   hTens = hTensHolder.toInt();
   hOnes = hOnesHolder.toInt();
   mTens = mTensHolder.toInt();
   mOnes = mOnesHolder.toInt();
-
+  
+  //add the ones and tens bits into bytes
   minutes = minutesTens[mTens] + minutesOnes[mOnes];
   hours = hoursTens[hTens] + hoursOnes[hOnes];
 
+  //send the bytes to the shift registers
   updateRegister(minutes, hours);
   
 }
