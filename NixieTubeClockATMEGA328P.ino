@@ -1,5 +1,6 @@
-#include <RTC.h>
+#include <I2C_RTC.h>
 #include <Wire.h>
+#include <AcksenButton.h>
 
 static DS1307 RTC;
 
@@ -8,31 +9,32 @@ const int latchPin = 9;
 const int clockPin = 10;
 const int dataPin = 8;
 
-//declare constants to fix tube pin mismatch
-const byte zeroTens = 0b10000000;
-const byte oneTens = 0b00000000;
-const byte twoTens = 0b10010000;
-const byte threeTens = 0b00010000;
-const byte fourTens = 0b11100000;
-const byte fiveTens = 0b01100000;
-const byte sixTens = 0b10100000;
-const byte sevenTens = 0b00100000;
-const byte eightTens = 0b11000000;
-const byte nineTens = 0b01000000;
+//declare constants for displaying correct numbers from shift register to K155ID1
+const byte zeroTens = 0b00000000;
+const byte oneTens = 0b00010000;
+const byte twoTens = 0b00100000;
+const byte threeTens = 0b00110000;
+const byte fourTens = 0b01000000;
+const byte fiveTens = 0b01010000;
+const byte sixTens = 0b01100000;
+const byte sevenTens = 0b01110000;
+const byte eightTens = 0b10000000;
+const byte nineTens = 0b10010000;
 
-const byte zeroOnes = 0b00001000;
-const byte oneOnes = 0b00000000;
-const byte twoOnes = 0b00001001;
-const byte threeOnes = 0b00000001;
-const byte fourOnes = 0b00001110;
-const byte fiveOnes = 0b00000110;
-const byte sixOnes = 0b00001010;
-const byte sevenOnes = 0b00000010;
-const byte eightOnes = 0b00001100;
-const byte nineOnes = 0b00000100;
+const byte zeroOnes = 0b00000000;
+const byte oneOnes = 0b00000001;
+const byte twoOnes = 0b00000010;
+const byte threeOnes = 0b00000011;
+const byte fourOnes = 0b00000100;
+const byte fiveOnes = 0b00000101;
+const byte sixOnes = 0b00000110;
+const byte sevenOnes = 0b00000111;
+const byte eightOnes = 0b00001000;
+const byte nineOnes = 0b00001001;
 
 //declare constants for the bytes to be sent to 
 //SN74HC595N which correspond to the inputs for the K155ID1
+//This is for ease of programming
 const byte minutesTens[6] = {zeroTens,oneTens,twoTens,threeTens,fourTens,fiveTens};
 const byte minutesOnes[10] = {zeroOnes,oneOnes,twoOnes,threeOnes,fourOnes,fiveOnes,sixOnes,sevenOnes,eightOnes,nineOnes};
 const byte hoursTens[3] = {zeroTens,oneTens,twoTens};
@@ -111,6 +113,10 @@ void setup()
 
 void loop()
 {
+  //TODO add toggle switch that decides if clock is in timekeeping mode
+  //or in time setting mode
+
+  //TODO the following will fall under timekeeping mode
   //update time from RTC
   rtcMinutes = RTC.getMinutes();
   rtcHours = RTC.getHours();
@@ -137,5 +143,26 @@ void loop()
 
   //send the bytes to the shift registers
   updateRegister(minutes, hours);
+  //TODO end of timekeeping mode
+
+  //TODO the following will fall under time setting mode
+  //wait for button press to adjust hours
+  //test for hours format
+  if (RTC.getHourMode() == CLOCK_H24)
+  {
+    rtcHours = RTC.getHours();
+    if (rtcHours < 23)
+    {
+      rtcHours = rtcHours + 1;
+      RTC.setHours(rtcHours);
+    }
+    else
+    {
+      rtcHours = 0;
+      RTC.setHours(rtcHours);
+    }
+  }
+  //wait for button press to adjust minutes
+  //TODO end of time setting mode
   
 }
