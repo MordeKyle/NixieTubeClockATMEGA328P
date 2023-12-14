@@ -1,8 +1,10 @@
-//Version 0.9
+//Version 0.9.1
+// Code clean-up
 //Code is mostly untested. Waiting for circuit boards to arrive
 //This is a bespoke sketch for a Nixie Tube Clock that runs on an ATMega328P_PU
 //   that uses two SN74HC595N's to control four K155ID1 nixie tube controllers
 //See https://github.com/MordeKyle/NixieTubeClockATMEGA328P
+
 #include <I2C_RTC.h>
 #include <Wire.h>
 #include <ezButton.h>
@@ -48,38 +50,20 @@ const byte minutesOnes[10] = {zeroOnes,oneOnes,twoOnes,threeOnes,fourOnes,fiveOn
 const byte hoursTens[3] = {zeroTens,oneTens,twoTens};
 const byte hoursOnes[10] = {zeroOnes,oneOnes,twoOnes,threeOnes,fourOnes,fiveOnes,sixOnes,sevenOnes,eightOnes,nineOnes};
 
-//declare variables to send into shift register function
-
-byte hours;
-byte minutes;
-
 //delcare variables to hold times from DS1307
 
 int rtcMinutes;
 int rtcHours;
 
-//declare constant for a leading zero
-
-const String leadingZero = "0";
-
-//declare variable to hold return from isLeadingZero
-
-String zeroedMinutes;
-String zeroedHours;
-
-//declare variables to hold single digits of time
-
-int hTens;
-int hOnes;
-int mTens;
-int mOnes;
-
-//declare variable to hold single digit of time in string form for conversion
-
+//declare holders to be converted to int
 String hTensHolder;
 String hOnesHolder;
 String mTensHolder;
 String mOnesHolder;
+
+//declare constant for a leading zero
+
+const String leadingZero = "0";
 
 //buttons and switch
 
@@ -98,31 +82,7 @@ void updateRegister(byte mins, byte hrs)
   digitalWrite(latchPin, HIGH); //set latch to high
 }
 
-// function to update the display
-
-void updateDisplay(int hoursInput, int minutesInput)
-{
-  zeroedHours = isLeadingZero(hoursInput); //apply leading zero if necessary
-  zeroedMinutes = isLeadingZero(minutesInput); //apply leading zero if necessary
-
-  hTensHolder = zeroedHours[0]; //pulls out first hour digit
-  hOnesHolder = zeroedHours[1]; //pulls out second hour digit
-  mTensHolder = zeroedMinutes[0]; //pulls out first minute digit
-  mOnesHolder = zeroedMinutes[1]; //pulls out second minute digit
-
-  hTens = hTensHolder.toInt(); //convert to int
-  hOnes = hOnesHolder.toInt(); //convert to int
-  mTens = mTensHolder.toInt(); //convert to int
-  mOnes = mOnesHolder.toInt(); //convert to int
-
-  hours = hoursTens[hTens] + hoursOnes[hOnes]; //add hours nibbles to byte
-  minutes = minutesTens[mTens] + minutesOnes[mOnes]; //add minutes nibbles to byte
-
-  updateRegister(minutes, hours); //update shift registers with time
-}
-
 //function to decide if a leading zero needs to be added or not
-
 String isLeadingZero(int input)
 {
   String holder;
@@ -135,6 +95,29 @@ String isLeadingZero(int input)
     holder = String(input);
   }
   return holder;
+}
+
+// function to update the display
+
+void updateDisplay(int hoursInput, int minutesInput)
+{
+  String zeroedHours = isLeadingZero(hoursInput); //apply leading zero if necessary
+  String zeroedMinutes = isLeadingZero(minutesInput); //apply leading zero if necessary
+
+  hTensHolder = zeroedHours[0]; //pulls out first hour digit
+  hOnesHolder = zeroedHours[1]; //pulls out second hour digit
+  mTensHolder = zeroedMinutes[0]; //pulls out first minute digit
+  mOnesHolder = zeroedMinutes[1]; //pulls out second minute digit
+
+  int hTens = hTensHolder.toInt(); //convert to int
+  int hOnes = hOnesHolder.toInt(); //convert to int
+  int mTens = mTensHolder.toInt(); //convert to int
+  int mOnes = mOnesHolder.toInt(); //convert to int
+
+  byte hours = hoursTens[hTens] + hoursOnes[hOnes]; //add hours nibbles to byte
+  byte minutes = minutesTens[mTens] + minutesOnes[mOnes]; //add minutes nibbles to byte
+
+  updateRegister(minutes, hours); //update shift registers with time
 }
 
 void setup()
