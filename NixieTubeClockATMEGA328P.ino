@@ -1,15 +1,22 @@
+//Version 0.9
+//Code is mostly untested. Waiting for circuit boards to arrive
+//This is a bespoke sketch for a Nixie Tube Clock that runs on an ATMega328P_PU
+//   that uses two SN74HC595N's to control four K155ID1 nixie tube controllers
+//See https://github.com/MordeKyle/NixieTubeClockATMEGA328P
 #include <I2C_RTC.h>
 #include <Wire.h>
-#include <AcksenButton.h>
+#include <ezButton.h>
 
 static DS1307 RTC;
 
 //declare constants for pins going to SN74HC595N
+
 const int latchPin = 9;
 const int clockPin = 10;
 const int dataPin = 8;
 
 //declare constants for displaying correct numbers from shift register to K155ID1
+
 const byte zeroTens = 0b00000000;
 const byte oneTens = 0b10000000;
 const byte twoTens = 0b01000000;
@@ -35,48 +42,87 @@ const byte nineOnes = 0b00001001;
 //declare constants for the bytes to be sent to 
 //SN74HC595N which correspond to the inputs for the K155ID1
 //This is for ease of programming
+
 const byte minutesTens[6] = {zeroTens,oneTens,twoTens,threeTens,fourTens,fiveTens};
 const byte minutesOnes[10] = {zeroOnes,oneOnes,twoOnes,threeOnes,fourOnes,fiveOnes,sixOnes,sevenOnes,eightOnes,nineOnes};
 const byte hoursTens[3] = {zeroTens,oneTens,twoTens};
 const byte hoursOnes[10] = {zeroOnes,oneOnes,twoOnes,threeOnes,fourOnes,fiveOnes,sixOnes,sevenOnes,eightOnes,nineOnes};
 
 //declare variables to send into shift register function
+
 byte hours;
 byte minutes;
 
 //delcare variables to hold times from DS1307
+
 int rtcMinutes;
 int rtcHours;
 
 //declare constant for a leading zero
+
 const String leadingZero = "0";
 
 //declare variable to hold return from isLeadingZero
+
 String zeroedMinutes;
 String zeroedHours;
 
 //declare variables to hold single digits of time
+
 int hTens;
 int hOnes;
 int mTens;
 int mOnes;
 
 //declare variable to hold single digit of time in string form for conversion
+
 String hTensHolder;
 String hOnesHolder;
 String mTensHolder;
 String mOnesHolder;
 
+//buttons and switch
+
+const int adjustSwitch = 7;
+int adjustSwitchState;
+ezButton hoursButton(5);
+ezButton minutesButton(6);
+
 //function to update SN74HC595N
+
 void updateRegister(byte mins, byte hrs)
 {
-  digitalWrite(latchPin, LOW);
-  shiftOut(dataPin, clockPin, LSBFIRST, mins);
-  shiftOut(dataPin, clockPin, LSBFIRST, hrs);
-  digitalWrite(latchPin, HIGH);
+  digitalWrite(latchPin, LOW); //set latch to low
+  shiftOut(dataPin, clockPin, LSBFIRST, mins); //send the minutes out
+  shiftOut(dataPin, clockPin, LSBFIRST, hrs); //send the hours out
+  digitalWrite(latchPin, HIGH); //set latch to high
+}
+
+// function to update the display
+
+void updateDisplay(int hoursInput, int minutesInput)
+{
+  zeroedHours = isLeadingZero(hoursInput); //apply leading zero if necessary
+  zeroedMinutes = isLeadingZero(minutesInput); //apply leading zero if necessary
+
+  hTensHolder = zeroedHours[0]; //pulls out first hour digit
+  hOnesHolder = zeroedHours[1]; //pulls out second hour digit
+  mTensHolder = zeroedMinutes[0]; //pulls out first minute digit
+  mOnesHolder = zeroedMinutes[1]; //pulls out second minute digit
+
+  hTens = hTensHolder.toInt(); //convert to int
+  hOnes = hOnesHolder.toInt(); //convert to int
+  mTens = mTensHolder.toInt(); //convert to int
+  mOnes = mOnesHolder.toInt(); //convert to int
+
+  hours = hoursTens[hTens] + hoursOnes[hOnes]; //add hours nibbles to byte
+  minutes = minutesTens[mTens] + minutesOnes[mOnes]; //add minutes nibbles to byte
+
+  updateRegister(minutes, hours); //update shift registers with time
 }
 
 //function to decide if a leading zero needs to be added or not
+
 String isLeadingZero(int input)
 {
   String holder;
@@ -109,60 +155,86 @@ void setup()
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
+  pinMode(adjustSwitch, INPUT);
+
+  hoursButton.setDebounceTime(50);
+  minutesButton.setDebounceTime(50);
 }
 
 void loop()
 {
-  //TODO add toggle switch that decides if clock is in timekeeping mode
-  //or in time setting mode
+  //read the state of the time setting switch
 
-  //TODO the following will fall under timekeeping mode
-  //update time from RTC
-  rtcMinutes = RTC.getMinutes();
-  rtcHours = RTC.getHours();
+  adjustSwitchState = digitalRead(adjustSwitch);
 
-  //apply leading zero if necessary
-  zeroedMinutes = isLeadingZero(rtcMinutes);
-  zeroedHours = isLeadingZero(rtcHours);
+  //if the switch is in time keeping mode
 
-  //separate the ones and tens
-  hTensHolder = zeroedHours[0];
-  hOnesHolder = zeroedHours[1];
-  mTensHolder = zeroedMinutes[0];
-  mOnesHolder = zeroedMinutes[1];
-
-  //convert to int
-  hTens = hTensHolder.toInt();
-  hOnes = hOnesHolder.toInt();
-  mTens = mTensHolder.toInt();
-  mOnes = mOnesHolder.toInt();
-  
-  //add the ones and tens bits into bytes
-  minutes = minutesTens[mTens] + minutesOnes[mOnes];
-  hours = hoursTens[hTens] + hoursOnes[hOnes];
-
-  //send the bytes to the shift registers
-  updateRegister(minutes, hours);
-  //TODO end of timekeeping mode
-
-  //TODO the following will fall under time setting mode
-  //wait for button press to adjust hours
-  //test for hours format
-  if (RTC.getHourMode() == CLOCK_H24)
+  if (adjustSwitchState == 0)
   {
-    rtcHours = RTC.getHours();
-    if (rtcHours < 23)
+    rtcHours = RTC.getHours(); //pull hours from RTC
+    rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+    updateDisplay(rtcHours, rtcMinutes); //update the display
+  }
+
+  //if the time setting switch is in adjust mode
+
+  else
+  {
+    hoursButton.loop();
+    minutesButton.loop();
+    int hoursButtonState = hoursButton.getState();
+    int minutesButtonState = minutesButton.getState();
+
+    rtcHours = RTC.getHours(); //pull hours from RTC
+    rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+    updateDisplay(rtcHours, rtcMinutes); //update display
+
+    if (hoursButton.isPressed())
     {
-      rtcHours = rtcHours + 1;
-      RTC.setHours(rtcHours);
+      if (RTC.getHourMode() == CLOCK_H24)
+      {
+        rtcHours = RTC.getHours(); //pull hours from RTC
+        if (rtcHours < 23)
+        {
+          rtcHours = rtcHours + 1; //add 1 hour
+          RTC.setHours(rtcHours); //set hours in RTC
+          delay(250); //delay for 250 milliseconds (maybe not necessary)
+          rtcHours = RTC.getHours(); //pull hours from RTC
+          rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+          updateDisplay(rtcHours, rtcMinutes); //update display
+        }
+        else
+        {
+          rtcHours = 0; //set hours to 0
+          RTC.setHours(rtcHours); //set time in RTC
+          delay(250); //delay for 250 milliseconds (maybe not necessary)
+          rtcHours = RTC.getHours(); //pull hours from RTC
+          rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+          updateDisplay(rtcHours, rtcMinutes); //update display
+        }
+      }
     }
-    else
+    if (minutesButton.isPressed())
     {
-      rtcHours = 0;
-      RTC.setHours(rtcHours);
+      rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+      if (rtcMinutes < 59)
+      {
+        rtcMinutes = rtcMinutes + 1; //add 1 minute
+        RTC.setMinutes(rtcMinutes); //set minutes in RTC
+        delay(250); //delay for 250 milliseconds (maybe not necessary)
+        rtcHours = RTC.getHours(); //pull hours from RTC
+        rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+        updateDisplay(rtcHours, rtcMinutes); //update display
+      }
+      else
+      {
+        rtcMinutes = 0; //set minutes to 0
+        RTC.setMinutes(rtcMinutes); //set minutes in RTC
+        delay(250); //delay for 250 milliseconds (maybe not necessary)
+        rtcHours = RTC.getHours(); //pull hours from RTC
+        rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
+        updateDisplay(rtcHours, rtcMinutes); //update display
+      }
     }
   }
-  //wait for button press to adjust minutes
-  //TODO end of time setting mode
-  
 }
