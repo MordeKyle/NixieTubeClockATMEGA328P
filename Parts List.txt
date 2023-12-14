@@ -1,3 +1,4 @@
+UPDATE TO PARTS LIST TO COME
 Parts list:
 **ATMEGA328P-PU** - https://www.digikey.com/en/products/detail/microchip-technology/ATMEGA328P-PU/1914589
 **2032 Battery Holder** - https://www.digikey.com/en/products/detail/keystone-electronics/101/2745548
