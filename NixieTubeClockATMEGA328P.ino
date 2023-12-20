@@ -1,3 +1,7 @@
+//Version 0.9.2
+// New Button setup
+//Boards have arrived, will begin testing the code on the board as I finish
+//   getting them put together.
 //Version 0.9.1
 // Code clean-up
 //Code is mostly untested. Waiting for circuit boards to arrive
@@ -7,7 +11,6 @@
 
 #include <I2C_RTC.h>
 #include <Wire.h>
-#include <ezButton.h>
 
 static DS1307 RTC;
 
@@ -56,6 +59,7 @@ int rtcMinutes;
 int rtcHours;
 
 //declare holders to be converted to int
+
 String hTensHolder;
 String hOnesHolder;
 String mTensHolder;
@@ -68,9 +72,14 @@ const String leadingZero = "0";
 //buttons and switch
 
 const int adjustSwitch = 7;
-int adjustSwitchState;
-ezButton hoursButton(5);
-ezButton minutesButton(6);
+int adjustSwitchState = 0;
+int lastAdjustSwitchState = 0;
+const int hoursButton =5;
+const int minutesButton = 6;
+int hoursButtonState = 0;
+int minutesButtonState = 0;
+int lastHoursButtonState = 0;
+int lastMinutesButtonState = 0;
 
 //function to update SN74HC595N
 
@@ -139,9 +148,8 @@ void setup()
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
   pinMode(adjustSwitch, INPUT);
-
-  hoursButton.setDebounceTime(50);
-  minutesButton.setDebounceTime(50);
+  pinMode(hoursButton, INPUT);
+  pinMode(minutesButton, INPUT);
 }
 
 void loop()
@@ -154,6 +162,7 @@ void loop()
 
   if (adjustSwitchState == 0)
   {
+    Serial.println("Adjust Switch Off");
     rtcHours = RTC.getHours(); //pull hours from RTC
     rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
     updateDisplay(rtcHours, rtcMinutes); //update the display
@@ -163,61 +172,103 @@ void loop()
 
   else
   {
-    hoursButton.loop();
-    minutesButton.loop();
-    int hoursButtonState = hoursButton.getState();
-    int minutesButtonState = minutesButton.getState();
-
+    Serial.println("Adjust Switch On");
     rtcHours = RTC.getHours(); //pull hours from RTC
     rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
     updateDisplay(rtcHours, rtcMinutes); //update display
+    hoursButtonState = digitalRead(hoursButton);
+    minutesButtonState = digitalRead(minutesButton);
 
-    if (hoursButton.isPressed())
+    if (hoursButtonState != lastHoursButtonState)
     {
-      if (RTC.getHourMode() == CLOCK_H24)
+      if (hoursButtonState == HIGH)
       {
-        rtcHours = RTC.getHours(); //pull hours from RTC
-        if (rtcHours < 23)
+        Serial.println("Hours Button Pressed");
+        if (RTC.getHourMode() == CLOCK_H24)
         {
-          rtcHours = rtcHours + 1; //add 1 hour
-          RTC.setHours(rtcHours); //set hours in RTC
-          delay(250); //delay for 250 milliseconds (maybe not necessary)
-          rtcHours = RTC.getHours(); //pull hours from RTC
-          rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
-          updateDisplay(rtcHours, rtcMinutes); //update display
+          rtcHours = RTC.getHours();
+          if (rtcHours < 23)
+          {
+            rtcHours = rtcHours + 1;
+            RTC.setHours(rtcHours);
+            delay(250);
+            rtcHours = RTC.getHours();
+            rtcMinutes = RTC.getMinutes();
+            updateDisplay(rtcHours, rtcMinutes);
+          }
+          else
+          {
+            rtcHours = 0;
+            RTC.setHours(rtcHours);
+            delay(250);
+            rtcHours = RTC.getHours();
+            rtcMinutes = RTC.getMinutes();
+            updateDisplay(rtcHours, rtcMinutes);
+          }
         }
         else
         {
-          rtcHours = 0; //set hours to 0
-          RTC.setHours(rtcHours); //set time in RTC
-          delay(250); //delay for 250 milliseconds (maybe not necessary)
-          rtcHours = RTC.getHours(); //pull hours from RTC
-          rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
-          updateDisplay(rtcHours, rtcMinutes); //update display
+          rtcHours = RTC.getHours();
+          if (rtcHours < 12)
+          {
+            rtcHours = rtcHours + 1;
+            RTC.setHours(rtcHours);
+            delay(250);
+            rtcHours = RTC.getHours();
+            rtcMinutes = RTC.getMinutes();
+            updateDisplay(rtcHours, rtcMinutes);
+          }
+          else
+          {
+            rtcHours = 0;
+            RTC.setHours(rtcHours);
+            delay(250);
+            rtcHours = RTC.getHours();
+            rtcMinutes = RTC.getMinutes();
+            updateDisplay(rtcHours, rtcMinutes);
+          }
         }
-      }
-    }
-    if (minutesButton.isPressed())
-    {
-      rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
-      if (rtcMinutes < 59)
-      {
-        rtcMinutes = rtcMinutes + 1; //add 1 minute
-        RTC.setMinutes(rtcMinutes); //set minutes in RTC
-        delay(250); //delay for 250 milliseconds (maybe not necessary)
-        rtcHours = RTC.getHours(); //pull hours from RTC
-        rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
-        updateDisplay(rtcHours, rtcMinutes); //update display
       }
       else
       {
-        rtcMinutes = 0; //set minutes to 0
-        RTC.setMinutes(rtcMinutes); //set minutes in RTC
-        delay(250); //delay for 250 milliseconds (maybe not necessary)
-        rtcHours = RTC.getHours(); //pull hours from RTC
-        rtcMinutes = RTC.getMinutes(); //pull minutes from RTC
-        updateDisplay(rtcHours, rtcMinutes); //update display
+        Serial.println("Hours Button Not Pressed");
       }
     }
+    else if (minutesButtonState != lastMinutesButtonState)
+    {
+      if (minutesButtonState == HIGH)
+      {
+        Serial.println("Minutes Button Pressed");
+        rtcMinutes = RTC.getMinutes();
+        if (rtcMinutes < 59)
+        {
+          rtcMinutes = rtcMinutes + 1;
+          RTC.setMinutes(rtcMinutes);
+          delay(250);
+          rtcHours = RTC.getHours();
+          rtcMinutes = RTC.getMinutes();
+          updateDisplay(rtcHours, rtcMinutes);
+        }
+        else
+        {
+          rtcMinutes = 0;
+          RTC.setMinutes(rtcMinutes);
+          delay(250);
+          rtcHours = RTC.getHours();
+          rtcMinutes = RTC.getMinutes();
+          updateDisplay(rtcHours, rtcMinutes);
+        }
+      }
+      else
+      {
+        Serial.println("Minutes Button Not Pressed");
+      }
+    }
+    else
+    {
+      Serial.println("No button pressed");
+    }
+    lastHoursButtonState = hoursButtonState;
+    lastMinutesButtonState = minutesButtonState;
   }
 }
